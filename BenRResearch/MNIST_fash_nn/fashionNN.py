@@ -1,0 +1,1 @@
+# This is where I will implement the NN for the MNIST fashion dataset when I get time
