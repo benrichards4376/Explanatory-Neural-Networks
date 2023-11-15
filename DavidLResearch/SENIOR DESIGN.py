@@ -22,8 +22,7 @@ class CustomAutogradFunction(Function):
         #output = input  # For demonstration, it just passes input as output
         
         ctx.save_for_backward(input)
-        output = input.clone()  # Your custom operation here
-        return output
+        return input
 
     @staticmethod
     def backward(ctx, grad_output):
@@ -37,17 +36,13 @@ class CustomAutogradFunction(Function):
         # You can perform your custom gradient calculation here if needed
         #grad_input = grad_output  # For demonstration, it just passes grad_output as grad_input
         
-        input, = ctx.saved_tensors  # Retrieve the input from the forward pass
+        input, = ctx.saved_tensors
+
+        # Calculate custom gradients (modify as needed)
         custom_gradients = input.clone().detach()
-        print("Custom Gradients:", custom_gradients)
+
+        # Return custom gradients for backpropagation
         return custom_gradients * grad_output
-
-
-# In[ ]:
-
-
-
-        
 
 
 # In[2]:
@@ -64,7 +59,7 @@ class NeuralNetwork(nn.Module):
 
     def forward(self, x):
         
-        #x = CustomAutogradFunction.apply(x)
+        x = CustomAutogradFunction.apply(x)
         x = self.fc1(x)
         #x = self.custom_layer(x)        
         x = self.relu(x)
@@ -99,7 +94,7 @@ optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 criterion = nn.CrossEntropyLoss()
 
 
-# In[7]:
+# In[5]:
 
 
 # Training Loop
@@ -123,21 +118,21 @@ for epoch in range(num_epochs):
 print('Training finished.')
 
 
-# In[8]:
+# In[ ]:
 
 
 fc1_weights_neuron1 = model.fc1.weight[0].detach().numpy()
 print(fc1_weights_neuron1[0])
 
 
-# In[9]:
+# In[ ]:
 
 
 fc1_weights_neuron1_gradients = model.fc1.weight.grad[0].detach().numpy()
 print(fc1_weights_neuron1_gradients[0])
 
 
-# In[10]:
+# In[ ]:
 
 
 transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
