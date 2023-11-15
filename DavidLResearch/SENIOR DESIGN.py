@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[22]:
+# In[1]:
 
 
 import torch
@@ -16,29 +16,41 @@ class CustomAutogradFunction(Function):
     def forward(ctx, input):
         
         # Store input for use in the backward pass
-        ctx.save_for_backward(input)
+        #ctx.save_for_backward(input)
         
         # You can perform your custom operation here if needed
-        output = input  # For demonstration, it just passes input as output
+        #output = input  # For demonstration, it just passes input as output
         
+        ctx.save_for_backward(input)
+        output = input.clone()  # Your custom operation here
         return output
 
     @staticmethod
     def backward(ctx, grad_output):
         # Print information during the backward pass
-        print("Backward pass: Gradients shape:", grad_output.shape)
-        print("Gradients values:", grad_output)
-        
+        #print("Backward pass: Gradients shape:", grad_output.shape)
+        #print("Gradients values:", grad_output)
+        #custom_gradients = input.clone().detach()
+        #print("Custom Gradients:", custom_gradients)
         # Retrieve the input from the forward pass
-        input, = ctx.saved_tensors
-        
+        #input, = ctx.saved_tensors
         # You can perform your custom gradient calculation here if needed
-        grad_input = grad_output  # For demonstration, it just passes grad_output as grad_input
+        #grad_input = grad_output  # For demonstration, it just passes grad_output as grad_input
         
-        return grad_input
+        input, = ctx.saved_tensors  # Retrieve the input from the forward pass
+        custom_gradients = input.clone().detach()
+        print("Custom Gradients:", custom_gradients)
+        return custom_gradients * grad_output
 
 
-# In[23]:
+# In[ ]:
+
+
+
+        
+
+
+# In[2]:
 
 
 # Define a simple neural network class
@@ -46,23 +58,21 @@ class NeuralNetwork(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
         super(NeuralNetwork, self).__init__()
         self.fc1 = nn.Linear(input_size, hidden_size)
-        
         self.custom_layer = CustomAutogradFunction.apply
-        
-        self.explainable = [self.fc1.weight.data[:], self.fc1.bias.data[:]]
-        
         self.relu = nn.ReLU()
         self.fc2 = nn.Linear(hidden_size, output_size)
 
     def forward(self, x):
+        
+        #x = CustomAutogradFunction.apply(x)
         x = self.fc1(x)
-        x = self.custom_layer(x)
+        #x = self.custom_layer(x)        
         x = self.relu(x)
         x = self.fc2(x)
         return x
 
 
-# In[24]:
+# In[3]:
 
 
 # Hyperparameters
@@ -77,7 +87,7 @@ num_epochs = 10
 transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
 
 
-# In[25]:
+# In[4]:
 
 
 train_dataset = datasets.MNIST(root='./data', train=True, transform=transform, download=True)
@@ -89,12 +99,11 @@ optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 criterion = nn.CrossEntropyLoss()
 
 
-# In[26]:
-
-
+# In[7]:
 
 
 # Training Loop
+i = 0
 for epoch in range(num_epochs):
     for batch_idx, (data, targets) in enumerate(train_loader):
         data = data.view(-1, 28 * 28)  # Flatten the input
@@ -103,21 +112,61 @@ for epoch in range(num_epochs):
         loss = criterion(outputs, targets)
         loss.backward()
         optimizer.step()
-
+        #print(model.fc1.weight.grad.data[:])
+        
+        fc1_weights_neuron1_gradients = model.fc1.weight.grad[0].detach().numpy()
+        fc1_weights_neuron1 = model.fc1.weight[0].detach().numpy()
+        
+        if(fc1_weights_neuron1_gradients[0] != 0):
+            print("Neuron 0 in Layer 1 at iteration ", i,"Gradient: ", fc1_weights_neuron1_gradients[0], "Weights: ",  fc1_weights_neuron1[0])
+        i = i + 1
 print('Training finished.')
-torch.save(model, 'numbers.pth')
 
 
-# In[15]:
+# In[8]:
 
 
-print(model.explainable)
+fc1_weights_neuron1 = model.fc1.weight[0].detach().numpy()
+print(fc1_weights_neuron1[0])
+
+
+# In[9]:
+
+
+fc1_weights_neuron1_gradients = model.fc1.weight.grad[0].detach().numpy()
+print(fc1_weights_neuron1_gradients[0])
 
 
 # In[10]:
 
 
-print(model.fc1.weight.data[:])
+transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
+
+# Load the MNIST test dataset
+test_dataset = datasets.MNIST(root='./data', train=False, transform=transform, download=True)
+test_loader = DataLoader(test_dataset, batch_size=1, shuffle=True)  # Set batch_size to 1 for individual testing
+
+# Test the model on the test dataset and print the labels every 100 tests
+model.eval()  # Set the model to evaluation mode
+
+total = 0
+correct = 0
+
+with torch.no_grad():
+    for i, (images, labels) in enumerate(test_loader, 1):
+        # Flatten the input images
+        images = images.view(-1, 28 * 28)
+        outputs = model(images)
+        predicted = outputs.argmax(dim=1)
+        correct += (predicted == labels).sum().item()
+        total += 1
+
+        if i % 1000 == 0:
+            print(f'Test {i}: Actual Label: {labels.item()}, Predicted Number: {predicted.item()}')
+
+# Calculate and print the total accuracy
+accuracy = 100 * correct / total
+print(f'Total Accuracy: {accuracy:.2f}%')
 
 
 # In[ ]:
