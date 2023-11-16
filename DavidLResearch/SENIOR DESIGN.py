@@ -11,6 +11,10 @@ from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 from torch.autograd import Function
 
+CustObjective = []
+activations = []
+objective = []
+
 class CustomAutogradFunction(Function):
     @staticmethod
     def forward(ctx, input):
@@ -45,6 +49,8 @@ class CustomAutogradFunction(Function):
         # the gradient of the loss with respect to the output of the custom autograd function is grad_output
         if(grad_output[0,0].item()!= 0):
             print("Output Gradient:", grad_output[0,0].item())
+        
+        CustObjective.append(grad_output[0,0].item())
         
         return grad_output
 
@@ -116,6 +122,9 @@ for epoch in range(num_epochs):
         fc1_weights_neuron1_gradients = model.fc1.weight.grad[0].detach().numpy()
         fc1_weights_neuron1 = model.fc1.weight[0].detach().numpy()
         
+        activations.append(fc1_weights_neuron1[0])
+        objective.append(fc1_weights_neuron1_gradients[0])
+        
         if(fc1_weights_neuron1_gradients[0] != 0):
             print("Neuron 0 in Layer 1 at iteration ", i,"Gradient: ", fc1_weights_neuron1_gradients[0], "Weights: ",  fc1_weights_neuron1[0])
         #print("Default Gradient: ", fc1_weights_neuron1_gradients[0])
@@ -170,10 +179,43 @@ accuracy = 100 * correct / total
 print(f'Total Accuracy: {accuracy:.2f}%')
 
 
-# In[ ]:
+# In[9]:
 
 
+#len(objective)
+#len(activations)
+#len(gradient)
+#objective[9300]
+#activations[9300]
+#CustObjective[9300]
 
+
+# In[10]:
+
+
+#With this we have the data needed for an explainable node
+
+XNNNObjectives = objective
+XNNActivations = activations
+NNLayerIndex = 0
+NNNodeIndex = 0
+
+#Where:
+
+#XNNNObjectives: Represents the gradients of node 0 of the first layer for the i sample of the training set.
+
+#XNNActivations: Represent the activation or the weight of the first layer for the i sample of the training set.
+
+#NNLayerIndex: Represent the index where the neuron is.
+
+#NNNodeIndex: Represents the node index within the layer array.
+
+###################################################
+
+#Notes:
+
+#CustObjtive contain the gradients from the customAutogradfunction. In this list more than half of the gradients are 0 which
+# doesn't provide new information.
 
 
 # In[ ]:
