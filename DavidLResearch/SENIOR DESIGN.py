@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[9]:
+# In[1]:
 
 
 import torch
@@ -49,7 +49,7 @@ class CustomAutogradFunction(Function):
         return grad_output
 
 
-# In[10]:
+# In[2]:
 
 
 # Define a simple neural network class
@@ -63,7 +63,7 @@ class NeuralNetwork(nn.Module):
 
     def forward(self, x):
         
-        x = CustomAutogradFunction.apply(x)
+        #x = CustomAutogradFunction.apply(x)
         x = self.fc1(x)
         x = self.custom_layer(x)        
         x = self.relu(x)
@@ -71,14 +71,14 @@ class NeuralNetwork(nn.Module):
         return x
 
 
-# In[11]:
+# In[3]:
 
 
 # Hyperparameters
 input_size = 784  # MNIST images are 28x28 pixels
 hidden_size = 128
 output_size = 10  # 10 classes (digits 0-9)
-learning_rate = 1
+learning_rate = 0.001
 batch_size = 64
 num_epochs = 10
 
@@ -86,7 +86,7 @@ num_epochs = 10
 transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
 
 
-# In[12]:
+# In[4]:
 
 
 train_dataset = datasets.MNIST(root='./data', train=True, transform=transform, download=True)
@@ -98,7 +98,7 @@ optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 criterion = nn.CrossEntropyLoss()
 
 
-# In[13]:
+# In[5]:
 
 
 # Training Loop
